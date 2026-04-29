@@ -1,11 +1,20 @@
-﻿@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Quicksand:wght@500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap");
 @import "tailwindcss";
 
 :root {
-  font-family: "Nunito", "Quicksand", "Segoe UI", sans-serif;
+  --bg-soft: #fff7fa;
+  --bg-blush: #fff1f5;
+  --rose-ink: #3f2633;
+  --rose-muted: #7a5a68;
+  --rose-line: #fbcfe8;
+  --rose-button: #f472b6;
+  --rose-button-deep: #db2777;
+  --lavender-soft: #c4b5fd;
+
+  font-family: "Nunito", "Segoe UI", sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #3f2633;
+  color: var(--rose-ink);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -19,9 +28,58 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: #fff7fa;
+  background-color: var(--bg-soft);
 }
 
 button {
   font: inherit;
+}
+
+.display-cute {
+  font-family: "Fredoka", "Nunito", sans-serif;
+}
+
+.soft-card {
+  box-shadow:
+    0 16px 40px rgba(219, 39, 119, 0.09),
+    0 2px 10px rgba(196, 181, 253, 0.18);
+}
+
+.candy-shadow {
+  text-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.65),
+    0 10px 20px rgba(219, 39, 119, 0.22);
+}
+
+.sparkle-dot {
+  background: radial-gradient(circle at 30% 30%, #ffffff 0%, #f9a8d4 55%, #f472b6 100%);
+}
+
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.floaty {
+  animation: floaty 5s ease-in-out infinite;
+}
+
+.pop-in {
+  animation: popIn 320ms ease-out;
 }
