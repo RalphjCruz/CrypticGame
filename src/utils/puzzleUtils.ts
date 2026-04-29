@@ -17,7 +17,18 @@ export const puzzleTypes: Array<PuzzleType | "All Types"> = [
 ];
 
 export const getPuzzlesByDifficulty = (difficulty: Difficulty): Puzzle[] => {
-  return approvedManualPuzzles.filter((puzzle) => puzzle.difficulty === difficulty);
+  return approvedManualPuzzles.filter((puzzle) => {
+    if (puzzle.difficulty !== difficulty) {
+      return false;
+    }
+
+    // Very Hard should always be layered (double mechanism).
+    if (difficulty === "Very Hard") {
+      return Boolean(puzzle.secondaryType);
+    }
+
+    return true;
+  });
 };
 
 export const getPuzzlesByDifficultyAndType = (
