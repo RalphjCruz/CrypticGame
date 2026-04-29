@@ -1,41 +1,100 @@
-﻿import { useState } from "react";
+﻿import { useEffect, useState } from "react";
 import DifficultySelector from "./components/DifficultySelector";
 import PuzzleCard from "./components/PuzzleCard";
-import type { Difficulty, Puzzle } from "./types/puzzle";
-import { getRandomPuzzle } from "./utils/puzzleUtils";
+import type { Difficulty, Puzzle, PuzzleType } from "./types/puzzle";
+import { getRandomPuzzle, puzzleTypes, validatePuzzleBank } from "./utils/puzzleUtils";
+
+type AnswerStatus = "idle" | "empty" | "incorrect" | "correct";
+
+const normalizeAnswer = (value: string): string => {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+};
 
 function App() {
-  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>("Easy");
+  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>("Very Easy");
+  const [selectedType, setSelectedType] = useState<PuzzleType | "All Types">("All Types");
   const [currentPuzzle, setCurrentPuzzle] = useState<Puzzle | null>(null);
   const [showHint, setShowHint] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
+  const [userAnswer, setUserAnswer] = useState("");
+  const [answerStatus, setAnswerStatus] = useState<AnswerStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const resetRoundState = () => {
+    setShowHint(false);
+    setShowAnswer(false);
+    setUserAnswer("");
+    setAnswerStatus("idle");
+    setErrorMessage(null);
+  };
+
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      const issues = validatePuzzleBank();
+      if (issues.length > 0) {
+        console.warn("Puzzle bank validation issues:", issues);
+      }
+    }
+  }, []);
 
   const generatePuzzle = () => {
     const nextPuzzle = getRandomPuzzle({
       difficulty: selectedDifficulty,
+      typeFilter: selectedType,
       previousPuzzleId: currentPuzzle?.id,
     });
 
     if (!nextPuzzle) {
       setCurrentPuzzle(null);
-      setShowHint(false);
-      setShowAnswer(false);
+      resetRoundState();
       setErrorMessage(
-        `No ${selectedDifficulty.toLowerCase()} puzzles are available right now. Please try another level.`
+        `No ${selectedDifficulty.toLowerCase()} puzzles found for ${selectedType}. Try another filter.`
       );
       return;
     }
 
     setCurrentPuzzle(nextPuzzle);
-    setShowHint(false);
-    setShowAnswer(false);
-    setErrorMessage(null);
+    resetRoundState();
   };
 
   const handleDifficultyChange = (difficulty: Difficulty) => {
     setSelectedDifficulty(difficulty);
-    setErrorMessage(null);
+    setCurrentPuzzle(null);
+    resetRoundState();
+  };
+
+  const handleTypeChange = (type: PuzzleType | "All Types") => {
+    setSelectedType(type);
+    setCurrentPuzzle(null);
+    resetRoundState();
+  };
+
+  const handleAnswerChange = (value: string) => {
+    setUserAnswer(value);
+    if (answerStatus !== "idle") {
+      setAnswerStatus("idle");
+    }
+  };
+
+  const checkAnswer = () => {
+    if (!currentPuzzle) {
+      return;
+    }
+
+    const guess = normalizeAnswer(userAnswer);
+    if (!guess) {
+      setAnswerStatus("empty");
+      return;
+    }
+
+    const expected = normalizeAnswer(currentPuzzle.answer);
+    if (guess === expected) {
+      setAnswerStatus("correct");
+      setShowAnswer(true);
+      return;
+    }
+
+    setAnswerStatus("incorrect");
   };
 
   return (
@@ -46,25 +105,37 @@ function App() {
 
       <div className="relative mx-auto flex w-full max-w-3xl flex-col items-center gap-6">
         <header className="text-center">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-rose-500">
-            Cryptic Puzzle Notebook
-          </p>
-          <h1 className="mt-2 text-4xl font-bold tracking-tight text-[#3F2633] sm:text-5xl">
-            CrypticForge
-          </h1>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-rose-500">Cryptic Puzzle Notebook</p>
+          <h1 className="mt-2 text-4xl font-bold tracking-tight text-[#3F2633] sm:text-5xl">CrypticForge</h1>
           <p className="mt-3 max-w-xl text-sm text-[#7A5A68] sm:text-base">
-            Generate simple cryptic puzzles and learn how the clues work.
+            Learn cryptic clue mechanics by solving one polished clue at a time.
           </p>
         </header>
 
-        <section className="w-full rounded-3xl border border-pink-200/80 bg-white/70 p-5 shadow-sm shadow-pink-100 backdrop-blur sm:p-6">
-          <p className="mb-3 text-center text-sm font-semibold text-rose-600 sm:text-base">
-            Choose Difficulty
+        <section className="w-full rounded-3xl border border-rose-200/70 bg-white/75 p-4 text-left shadow-sm shadow-rose-100">
+          <h2 className="text-sm font-bold text-rose-700 sm:text-base">Quick Cryptic Rule</h2>
+          <p className="mt-1 text-sm text-[#7A5A68]">
+            Every clue has a definition plus wordplay. Wordplay uses fodder and indicators to guide the solve.
           </p>
-          <DifficultySelector
-            selectedDifficulty={selectedDifficulty}
-            onSelectDifficulty={handleDifficultyChange}
-          />
+        </section>
+
+        <section className="w-full rounded-3xl border border-pink-200/80 bg-white/70 p-5 shadow-sm shadow-pink-100 backdrop-blur sm:p-6">
+          <p className="mb-3 text-center text-sm font-semibold text-rose-600 sm:text-base">Choose Difficulty</p>
+          <DifficultySelector selectedDifficulty={selectedDifficulty} onSelectDifficulty={handleDifficultyChange} />
+
+          <label className="mt-4 block text-sm font-semibold text-rose-600">Clue Type</label>
+          <select
+            value={selectedType}
+            onChange={(event) => handleTypeChange(event.target.value as PuzzleType | "All Types")}
+            className="mt-2 w-full rounded-xl border border-pink-300 bg-white px-4 py-2 text-sm font-semibold text-rose-800 outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-200"
+          >
+            {puzzleTypes.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+
           <button
             type="button"
             onClick={generatePuzzle}
@@ -74,29 +145,24 @@ function App() {
           </button>
         </section>
 
-        {errorMessage && (
-          <div className="w-full rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
-            {errorMessage}
-          </div>
-        )}
+        {errorMessage && <div className="w-full rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">{errorMessage}</div>}
 
         {currentPuzzle ? (
           <PuzzleCard
             puzzle={currentPuzzle}
             showHint={showHint}
             showAnswer={showAnswer}
+            userAnswer={userAnswer}
+            answerStatus={answerStatus}
+            onAnswerChange={handleAnswerChange}
+            onCheckAnswer={checkAnswer}
             onShowHint={() => setShowHint(true)}
-            onRevealAnswer={() => setShowAnswer(true)}
             onGenerateAnother={generatePuzzle}
           />
         ) : (
           <section className="w-full rounded-3xl border border-dashed border-pink-300 bg-white/80 p-8 text-center">
-            <h2 className="text-lg font-semibold text-rose-700 sm:text-xl">
-              Ready for a clue?
-            </h2>
-            <p className="mt-2 text-sm text-[#7A5A68] sm:text-base">
-              Pick a difficulty and click "Generate Puzzle" to start.
-            </p>
+            <h2 className="text-lg font-semibold text-rose-700 sm:text-xl">Ready for a clue?</h2>
+            <p className="mt-2 text-sm text-[#7A5A68] sm:text-base">Pick a difficulty and type, then click "Generate Puzzle".</p>
           </section>
         )}
       </div>

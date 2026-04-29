@@ -174,3 +174,72 @@ Use clean boundaries:
 - App.tsx should only coordinate state and layout
 
 The app should work now with local data, but the code should make it easy to replace local data with an API later.
+
+## Cryptic Puzzle Quality Rules
+
+Every puzzle must be fair, explainable, and beginner-friendly.
+
+Each clue should have:
+- a definition
+- valid wordplay
+- a natural clue surface
+- a useful hint
+- a clear explanation
+
+Supported version 1 clue types:
+- Anagram
+- Hidden Word
+- Double Meaning
+
+Do not add random riddles and call them cryptic puzzles.
+
+Avoid:
+- forced explanations
+- obscure answers
+- clue/answer mismatches
+- repeated answers
+- unfair synonyms
+- clues that only make sense after being explained badly
+
+Difficulty should come from clever clue design, not confusion.
+
+## Manual Puzzle Bank Rule
+
+CrypticForge uses a manually curated puzzle bank.
+
+Do not mass-generate large puzzle sets unless explicitly asked.
+
+Puzzles should be written carefully and marked with:
+
+approved: true
+
+Only approved puzzles should appear in the app.
+
+Draft or experimental puzzles can stay in the file with:
+
+approved: false
+
+## Hidden Word Display Rule
+
+Hidden Word clues must not visually expose the answer.
+
+Bad:
+"Message found in deSIGN ALbum sleeve."
+
+Good:
+"Message found in design album sleeve."
+
+The explanation after reveal may show:
+"SIGNAL is hidden across deSIGN ALbum."
+
+## Spoiler Rule
+
+Before the answer is revealed, do not show:
+- answer
+- explanation
+- definition
+- wordplay
+- fodder
+- indicator
+
+These should only appear after reveal.

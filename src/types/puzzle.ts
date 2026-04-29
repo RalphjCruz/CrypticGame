@@ -1,6 +1,21 @@
-﻿export type Difficulty = "Easy" | "Medium" | "Hard";
+export type Difficulty =
+  | "Very Easy"
+  | "Easy"
+  | "Medium"
+  | "Hard"
+  | "Very Hard";
 
-export type PuzzleType = "Anagram" | "Hidden Word" | "Double Meaning";
+export type PuzzleType =
+  | "Anagram"
+  | "Selector"
+  | "Hidden Word"
+  | "Reversal"
+  | "Synonym"
+  | "Symbol"
+  | "Container"
+  | "Deletion"
+  | "Homophone"
+  | "Double Meaning";
 
 export interface Puzzle {
   id: number;
@@ -8,6 +23,13 @@ export interface Puzzle {
   answer: string;
   difficulty: Difficulty;
   type: PuzzleType;
+  secondaryType?: PuzzleType;
+  enumeration: string;
+  definition: string;
+  wordplay: string;
+  fodder?: string;
+  indicator?: string;
   hint: string;
   explanation: string;
+  approved: boolean;
 }

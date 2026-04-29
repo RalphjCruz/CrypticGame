@@ -5,7 +5,7 @@ interface DifficultySelectorProps {
   onSelectDifficulty: (difficulty: Difficulty) => void;
 }
 
-const difficulties: Difficulty[] = ["Easy", "Medium", "Hard"];
+const difficulties: Difficulty[] = ["Very Easy", "Easy", "Medium", "Hard", "Very Hard"];
 
 function DifficultySelector({
   selectedDifficulty,

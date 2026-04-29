@@ -1,20 +1,35 @@
-﻿# CrypticForge
+# CrypticForge
 
-CrypticForge is a small frontend-only cryptic puzzle generator game. Choose a difficulty, generate a puzzle, then reveal hints and explanations to learn how the clue works.
+CrypticForge is a frontend-only cryptic clue trainer that teaches clue mechanics one puzzle at a time.
 
 ## Features
 
-- Difficulty selection: `Easy`, `Medium`, `Hard`
-- Generate random cryptic puzzles from local TypeScript data
-- Puzzle types included:
-  - `Anagram`
-  - `Hidden Word`
-  - `Double Meaning`
-- `Show Hint` and `Reveal Answer` flow
-- Beginner-friendly explanation for each puzzle
-- `Generate Another` option
-- Prevents the same puzzle from appearing twice in a row (when possible)
-- Responsive pastel UI built for desktop and mobile
+- Manually curated puzzle bank in `src/data/manualPuzzles.ts`
+- Only puzzles with `approved: true` are playable
+- Difficulty levels: `Very Easy`, `Easy`, `Medium`, `Hard`, `Very Hard`
+- `Very Hard` can combine two clue mechanisms in one puzzle (shown as `Type + Secondary Type`)
+- Type filter: `All Types` plus clue categories
+- Pre-reveal gameplay shows only clue info, hint flow, and answer input
+- Post-reveal breakdown shows answer, explanation, definition, wordplay, fodder, and indicator
+- Local data only, no server required
+
+## Manual Curation Workflow
+
+1. Open `src/data/manualPuzzles.ts`.
+2. Copy an existing puzzle object as a template.
+3. Fill all required fields.
+4. Set `approved: false` while drafting.
+5. Set `approved: true` only after you review clue fairness and leakage.
+
+The app intentionally avoids AI/API generation for now so puzzle quality stays controlled and answer leakage is easier to prevent.
+
+## Difficulty Guide
+
+- Very Easy: Tutorial-style clues for beginners.
+- Easy: Simple one-step clues.
+- Medium: Slightly more disguised one-step clues.
+- Hard: More polished clues or light two-step logic.
+- Very Hard: Layered clues using multiple mechanisms.
 
 ## Tech Stack
 
@@ -32,10 +47,12 @@ src/
     PuzzleCard.tsx
     HintBox.tsx
   data/
-    puzzles.ts
+    manualPuzzles.ts
+    generatedPuzzles.ts (legacy, unused by runtime)
   types/
     puzzle.ts
   utils/
+    puzzleValidator.ts
     puzzleUtils.ts
   App.tsx
   main.tsx
@@ -68,22 +85,19 @@ npm run preview
 
 ## Deploy to Vercel (Free)
 
-1. Push this project to GitHub.
-2. Go to [Vercel](https://vercel.com/) and sign in.
-3. Click **Add New Project** and import your GitHub repo.
-4. Keep default settings (Framework: Vite).
-5. Click **Deploy**.
+1. Push this repo to GitHub.
+2. Import it into Vercel.
+3. Keep default Vite settings.
+4. Deploy.
 
-Vercel will build the app as a static frontend and give you a shareable URL.
-
-## Free Hosting Note
+## Frontend-Only Note
 
 This app does **not** require:
 
 - backend
 - database
-- login or authentication
-- API keys
-- paid services
+- login/authentication
+- paid APIs
+- AI generation services
 
-It is a static frontend MVP and works with free hosting on Vercel.
+It is a static frontend app and is free to host on Vercel.

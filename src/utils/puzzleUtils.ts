@@ -1,20 +1,51 @@
-﻿import { puzzles } from "../data/puzzles";
-import type { Difficulty, Puzzle } from "../types/puzzle";
+import { approvedManualPuzzles, manualPuzzles } from "../data/manualPuzzles";
+import type { Difficulty, Puzzle, PuzzleType } from "../types/puzzle";
+import { validatePuzzle, validatePuzzleBank as validateManualPuzzleBank } from "./puzzleValidator";
+
+export const puzzleTypes: Array<PuzzleType | "All Types"> = [
+  "All Types",
+  "Anagram",
+  "Selector",
+  "Hidden Word",
+  "Reversal",
+  "Synonym",
+  "Symbol",
+  "Container",
+  "Deletion",
+  "Homophone",
+  "Double Meaning",
+];
 
 export const getPuzzlesByDifficulty = (difficulty: Difficulty): Puzzle[] => {
-  return puzzles.filter((puzzle) => puzzle.difficulty === difficulty);
+  return approvedManualPuzzles.filter((puzzle) => puzzle.difficulty === difficulty);
+};
+
+export const getPuzzlesByDifficultyAndType = (
+  difficulty: Difficulty,
+  typeFilter: PuzzleType | "All Types"
+): Puzzle[] => {
+  const byDifficulty = getPuzzlesByDifficulty(difficulty);
+  if (typeFilter === "All Types") {
+    return byDifficulty;
+  }
+
+  return byDifficulty.filter(
+    (puzzle) => puzzle.type === typeFilter || puzzle.secondaryType === typeFilter
+  );
 };
 
 interface RandomPuzzleOptions {
   difficulty: Difficulty;
+  typeFilter: PuzzleType | "All Types";
   previousPuzzleId?: number | null;
 }
 
 export const getRandomPuzzle = ({
   difficulty,
+  typeFilter,
   previousPuzzleId,
 }: RandomPuzzleOptions): Puzzle | null => {
-  const pool = getPuzzlesByDifficulty(difficulty);
+  const pool = getPuzzlesByDifficultyAndType(difficulty, typeFilter);
 
   if (pool.length === 0) {
     return null;
@@ -29,3 +60,9 @@ export const getRandomPuzzle = ({
 
   return available[randomIndex] ?? null;
 };
+
+export const validatePuzzleBank = (): string[] => {
+  return validateManualPuzzleBank(manualPuzzles);
+};
+
+export { validatePuzzle };
