@@ -267,6 +267,23 @@ export const getSudokuHint = ({ puzzle, grid }: SudokuHintOptions): SudokuHintRe
   return hintableCells[randomIndex] ?? null;
 };
 
+export const isSudokuSolved = (puzzle: SudokuPuzzle, grid: SudokuGrid): boolean => {
+  for (let rowIndex = 0; rowIndex < 9; rowIndex += 1) {
+    for (let colIndex = 0; colIndex < 9; colIndex += 1) {
+      const puzzleValue = puzzle.puzzle[rowIndex][colIndex];
+      if (puzzleValue !== "0") {
+        continue;
+      }
+
+      if (grid[rowIndex][colIndex] !== puzzle.solution[rowIndex][colIndex]) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+};
+
 const isValidSudokuRow = (row: string): boolean => /^[0-9]{9}$/.test(row);
 
 export const validateSudokuBank = (): string[] => {

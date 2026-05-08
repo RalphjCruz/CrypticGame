@@ -9,6 +9,7 @@ interface SudokuCardProps {
   inputMode: SudokuInputMode;
   incorrectCount: number;
   maxIncorrect: number;
+  elapsedSeconds: number;
   selectedCell: { row: number; col: number } | null;
   selectedCellNotes: string;
   flashingCells: string[];
@@ -41,6 +42,7 @@ function SudokuCard({
   inputMode,
   incorrectCount,
   maxIncorrect,
+  elapsedSeconds,
   selectedCell,
   selectedCellNotes,
   flashingCells,
@@ -69,13 +71,14 @@ function SudokuCard({
 
   return (
     <article
-      className="soft-card pop-in w-full rounded-3xl border border-sky-200 bg-cover bg-center p-6 text-left sm:p-8"
+      className="soft-card pop-in w-full rounded-3xl border border-sky-200 bg-cover bg-center p-4 text-left sm:p-8"
       style={{
         backgroundImage:
           "linear-gradient(rgba(255,255,255,0.76), rgba(255,255,255,0.76)), url('/hangyodonpuzzle.jpg')",
       }}
     >
       <div className="display-cute flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide sm:text-sm">
+        <span className="rounded-full bg-white px-3 py-1 text-sky-800">Puzzle #{puzzle.id}</span>
         <span className="rounded-full bg-cyan-100 px-3 py-1 text-cyan-800">Sudoku</span>
         <span className="rounded-full bg-sky-100 px-3 py-1 text-sky-800">{puzzle.difficulty}</span>
       </div>
@@ -89,7 +92,7 @@ function SudokuCard({
             <button
               type="button"
               onClick={() => onInputModeChange("answer")}
-              className={`display-cute rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide transition sm:text-sm ${
+              className={`display-cute w-full rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide transition sm:w-auto sm:text-sm ${
                 inputMode === "answer"
                   ? "border-sky-700 bg-sky-600 text-white"
                   : "border-sky-200 bg-white text-sky-800 hover:bg-sky-50"
@@ -101,7 +104,7 @@ function SudokuCard({
             <button
               type="button"
               onClick={() => onInputModeChange("temp")}
-              className={`display-cute rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide transition sm:text-sm ${
+              className={`display-cute w-full rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide transition sm:w-auto sm:text-sm ${
                 inputMode === "temp"
                   ? "border-slate-800 bg-slate-800 text-white"
                   : "border-sky-200 bg-white text-sky-800 hover:bg-sky-50"
@@ -125,8 +128,11 @@ function SudokuCard({
                 Pencil Mode
               </span>
             </button>
-            <span className="display-cute rounded-full border border-rose-200 bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-800 sm:text-sm">
+            <span className="display-cute w-full rounded-full border border-rose-200 bg-rose-100 px-3 py-1 text-center text-xs font-semibold text-rose-800 sm:w-auto sm:text-sm">
               Incorrect: {incorrectCount} / {maxIncorrect}
+            </span>
+            <span className="display-cute w-full rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-center text-xs font-semibold text-sky-800 sm:w-auto sm:text-sm">
+              Time: {Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, "0")}
             </span>
           </div>
         ) : null}
@@ -214,7 +220,7 @@ function SudokuCard({
           <p className="display-cute text-xs font-semibold uppercase tracking-wide text-sky-700 sm:text-sm">
             Cell {selectedCell.row + 1}, {selectedCell.col + 1} Notes
           </p>
-          <div className="mt-2 grid grid-cols-3 gap-2 sm:max-w-44">
+          <div className="mt-2 grid grid-cols-3 gap-2 max-w-56">
             {Array.from({ length: 9 }).map((_, index) => {
               const digit = String(index + 1);
               const isActive = selectedCellNotes.includes(digit);
@@ -257,7 +263,7 @@ function SudokuCard({
           type="button"
           onClick={onSubmitAnswers}
           disabled={showSolution}
-          className="display-cute rounded-full border border-sky-300 bg-sky-100 px-4 py-2 text-sm font-semibold text-sky-800 transition hover:-translate-y-0.5 hover:bg-sky-200 disabled:cursor-not-allowed disabled:opacity-60"
+          className="display-cute w-full rounded-full border border-sky-300 bg-sky-100 px-4 py-2 text-sm font-semibold text-sky-800 transition hover:-translate-y-0.5 hover:bg-sky-200 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
           Submit Answers
         </button>
@@ -265,7 +271,7 @@ function SudokuCard({
           type="button"
           onClick={onUseHint}
           disabled={showSolution}
-          className="display-cute rounded-full border border-amber-200 bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-800 transition hover:-translate-y-0.5 hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60"
+          className="display-cute w-full rounded-full border border-amber-200 bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-800 transition hover:-translate-y-0.5 hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
           Hint Number
         </button>
@@ -273,14 +279,14 @@ function SudokuCard({
           type="button"
           onClick={onRevealSolution}
           disabled={showSolution}
-          className="display-cute rounded-full border border-cyan-200 bg-cyan-100 px-4 py-2 text-sm font-semibold text-cyan-800 transition hover:-translate-y-0.5 hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+          className="display-cute w-full rounded-full border border-cyan-200 bg-cyan-100 px-4 py-2 text-sm font-semibold text-cyan-800 transition hover:-translate-y-0.5 hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
           {showSolution ? "Solution Shown" : "Reveal Solution"}
         </button>
         <button
           type="button"
           onClick={onGenerateAnother}
-          className="display-cute rounded-full border border-sky-200 bg-white px-4 py-2 text-sm font-semibold text-sky-800 transition hover:-translate-y-0.5 hover:bg-sky-50"
+          className="display-cute w-full rounded-full border border-sky-200 bg-white px-4 py-2 text-sm font-semibold text-sky-800 transition hover:-translate-y-0.5 hover:bg-sky-50 sm:w-auto"
         >
           Generate Another
         </button>

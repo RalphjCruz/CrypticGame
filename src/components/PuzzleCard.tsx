@@ -53,6 +53,7 @@ function PuzzleCard({
   return (
     <article className="soft-card pop-in w-full rounded-3xl border border-sky-200 bg-white/95 p-6 text-left sm:p-8">
       <div className="display-cute flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide sm:text-sm">
+        <span className="rounded-full bg-white px-3 py-1 text-sky-800">Puzzle #{puzzle.id}</span>
         <span className="rounded-full bg-cyan-100 px-3 py-1 text-cyan-800">{typeLabel}</span>
         <span className="rounded-full bg-sky-100 px-3 py-1 text-sky-800">{puzzle.difficulty}</span>
         <span className="rounded-full bg-blue-100 px-3 py-1 text-blue-800">({puzzle.enumeration})</span>

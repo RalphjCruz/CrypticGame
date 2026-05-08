@@ -1,10 +1,18 @@
 import { useEffect, useState } from "react";
 import DifficultySelector from "./components/DifficultySelector";
 import PuzzleCard from "./components/PuzzleCard";
+import ProgressDashboard from "./components/ProgressDashboard";
 import SudokuCard from "./components/SudokuCard";
+import type { CrypticDashboardEntry, SudokuDashboardEntry } from "./types/progress";
 import type { Difficulty, Puzzle, PuzzleType } from "./types/puzzle";
 import type { SudokuDifficulty, SudokuPuzzle } from "./types/sudoku";
 import { getRandomPuzzle, puzzleTypes, validatePuzzleBank } from "./utils/puzzleUtils";
+import {
+  loadDashboardData,
+  loadDraftData,
+  saveDashboardData,
+  saveDraftData,
+} from "./utils/progressStorage";
 import {
   createSudokuEntryTypeGrid,
   createSudokuGivenMask,
@@ -12,6 +20,7 @@ import {
   getMaxIncorrectForDifficulty,
   getRandomSudokuPuzzle,
   getSudokuHint,
+  isSudokuSolved,
   isSudokuEntryCorrect,
   normalizeSudokuAnswerInput,
   normalizeSudokuPencilInput,
@@ -28,6 +37,7 @@ type AnswerStatus = "idle" | "empty" | "incorrect" | "correct";
 type GameMode = "Cryptic Puzzle" | "Sudoku";
 
 const gameModes: GameMode[] = ["Cryptic Puzzle", "Sudoku"];
+const MAX_DASHBOARD_HISTORY = 8;
 
 const normalizeAnswer = (value: string): string => {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
@@ -48,6 +58,8 @@ function App() {
   const [userAnswer, setUserAnswer] = useState("");
   const [answerStatus, setAnswerStatus] = useState<AnswerStatus>("idle");
   const [crypticErrorMessage, setCrypticErrorMessage] = useState<string | null>(null);
+  const [crypticDashboardEntries, setCrypticDashboardEntries] = useState<CrypticDashboardEntry[]>([]);
+  const [crypticCompletedPuzzleIds, setCrypticCompletedPuzzleIds] = useState<number[]>([]);
 
   const [selectedSudokuDifficulty, setSelectedSudokuDifficulty] =
     useState<SudokuDifficulty>("Easy");
@@ -62,8 +74,13 @@ function App() {
   );
   const [flashingSudokuCells, setFlashingSudokuCells] = useState<string[]>([]);
   const [showSudokuSolution, setShowSudokuSolution] = useState(false);
+  const [sudokuSolved, setSudokuSolved] = useState(false);
   const [sudokuHintMessage, setSudokuHintMessage] = useState<string | null>(null);
   const [sudokuErrorMessage, setSudokuErrorMessage] = useState<string | null>(null);
+  const [sudokuDashboardEntries, setSudokuDashboardEntries] = useState<SudokuDashboardEntry[]>([]);
+  const [sudokuCompletedPuzzleIds, setSudokuCompletedPuzzleIds] = useState<number[]>([]);
+  const [sudokuStartedAt, setSudokuStartedAt] = useState<number | null>(null);
+  const [sudokuElapsedSeconds, setSudokuElapsedSeconds] = useState(0);
 
   const resetCrypticRoundState = () => {
     setShowHint(false);
@@ -75,13 +92,42 @@ function App() {
 
   const resetSudokuRoundState = () => {
     setShowSudokuSolution(false);
+    setSudokuSolved(false);
     setSudokuInputMode("answer");
     setSudokuIncorrectCount(0);
     setSelectedSudokuCell(null);
     setFlashingSudokuCells([]);
     setSudokuHintMessage(null);
     setSudokuErrorMessage(null);
+    setSudokuElapsedSeconds(0);
   };
+
+  useEffect(() => {
+    const dashboardData = loadDashboardData();
+    const draftData = loadDraftData();
+    setCrypticDashboardEntries(dashboardData.crypticEntries);
+    setSudokuDashboardEntries(dashboardData.sudokuEntries);
+    setCrypticCompletedPuzzleIds(dashboardData.crypticCompletedPuzzleIds);
+    setSudokuCompletedPuzzleIds(dashboardData.sudokuCompletedPuzzleIds);
+    if (draftData.crypticAnswerDraft) {
+      setUserAnswer(draftData.crypticAnswerDraft);
+    }
+  }, []);
+
+  useEffect(() => {
+    saveDashboardData({
+      crypticEntries: crypticDashboardEntries,
+      sudokuEntries: sudokuDashboardEntries,
+      crypticCompletedPuzzleIds,
+      sudokuCompletedPuzzleIds,
+    });
+  }, [crypticCompletedPuzzleIds, crypticDashboardEntries, sudokuCompletedPuzzleIds, sudokuDashboardEntries]);
+
+  useEffect(() => {
+    saveDraftData({
+      crypticAnswerDraft: userAnswer,
+    });
+  }, [userAnswer]);
 
   useEffect(() => {
     if (import.meta.env.DEV) {
@@ -96,6 +142,18 @@ function App() {
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (!sudokuStartedAt || showSudokuSolution || !currentSudokuPuzzle) {
+      return;
+    }
+
+    const timerId = window.setInterval(() => {
+      setSudokuElapsedSeconds(Math.floor((Date.now() - sudokuStartedAt) / 1000));
+    }, 1000);
+
+    return () => window.clearInterval(timerId);
+  }, [currentSudokuPuzzle, showSudokuSolution, sudokuStartedAt]);
 
   const generatePuzzle = () => {
     const nextPuzzle = getRandomPuzzle({
@@ -129,6 +187,7 @@ function App() {
       setSudokuGivenMask([]);
       setSudokuEntryTypeGrid([]);
       setSelectedSudokuCell(null);
+      setSudokuStartedAt(null);
       resetSudokuRoundState();
       setSudokuErrorMessage(
         `No ${selectedSudokuDifficulty.toLowerCase()} Sudoku puzzles found right now. Try another difficulty.`
@@ -142,6 +201,7 @@ function App() {
     setSudokuEntryTypeGrid(createSudokuEntryTypeGrid(nextSudoku.puzzle));
     setSelectedSudokuCell(null);
     resetSudokuRoundState();
+    setSudokuStartedAt(Date.now());
   };
 
   const handleSudokuCellChange = (row: number, col: number, rawValue: string) => {
@@ -338,8 +398,37 @@ function App() {
       return !isSudokuEntryCorrect(currentSudokuPuzzle, cell.row, cell.col, cell.value);
     });
 
+    const logSudokuSubmit = (wrongCount: number, solved: boolean) => {
+      const nextSudokuEntry: SudokuDashboardEntry = {
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        timestamp: Date.now(),
+        puzzleId: currentSudokuPuzzle.id,
+        difficulty: currentSudokuPuzzle.difficulty,
+        submittedCount: submittedCells.length,
+        wrongCount,
+        solved,
+        elapsedSeconds: sudokuElapsedSeconds,
+      };
+      setSudokuDashboardEntries((previous) =>
+        [nextSudokuEntry, ...previous].slice(0, MAX_DASHBOARD_HISTORY)
+      );
+    };
+
     if (wrongCells.length === 0) {
-      setSudokuHintMessage("All submitted numbers are correct.");
+      const solved = isSudokuSolved(currentSudokuPuzzle, sudokuPlayerGrid);
+      logSudokuSubmit(0, solved);
+      if (solved) {
+        setSudokuSolved(true);
+        setSudokuStartedAt(null);
+        setSudokuCompletedPuzzleIds((previous) =>
+          previous.includes(currentSudokuPuzzle.id)
+            ? previous
+            : [...previous, currentSudokuPuzzle.id].sort((a, b) => a - b)
+        );
+        setSudokuHintMessage(`Solved in ${sudokuElapsedSeconds} seconds.`);
+      } else {
+        setSudokuHintMessage("All submitted numbers are correct.");
+      }
       return;
     }
 
@@ -355,6 +444,7 @@ function App() {
 
     setSudokuPlayerGrid(clearedGrid);
     setSudokuEntryTypeGrid(clearedEntryTypes);
+    logSudokuSubmit(wrongCells.length, false);
 
     if (nextIncorrectCount >= maxIncorrect) {
       setSudokuPlayerGrid(createSudokuPlayerGrid(currentSudokuPuzzle.puzzle));
@@ -363,6 +453,8 @@ function App() {
       setSudokuIncorrectCount(0);
       setSudokuInputMode("answer");
       setSelectedSudokuCell(null);
+      setSudokuSolved(false);
+      setSudokuStartedAt(Date.now());
       setSudokuHintMessage("Incorrect number. 0 attempts remaining. Puzzle reset.");
       return;
     }
@@ -425,9 +517,24 @@ function App() {
     }
 
     const expected = normalizeAnswer(currentPuzzle.answer);
+    const isCorrect = guess === expected;
+    const nextCrypticEntry: CrypticDashboardEntry = {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      timestamp: Date.now(),
+      puzzleId: currentPuzzle.id,
+      clue: currentPuzzle.clue,
+      difficulty: currentPuzzle.difficulty,
+      guess,
+      correct: isCorrect,
+    };
+    setCrypticDashboardEntries((previous) => [nextCrypticEntry, ...previous].slice(0, MAX_DASHBOARD_HISTORY));
+
     if (guess === expected) {
       setAnswerStatus("correct");
       setShowAnswer(true);
+      setCrypticCompletedPuzzleIds((previous) =>
+        previous.includes(currentPuzzle.id) ? previous : [...previous, currentPuzzle.id].sort((a, b) => a - b)
+      );
       return;
     }
 
@@ -467,6 +574,26 @@ function App() {
       return next;
     });
   };
+
+  const currentSudokuFilledCount = sudokuPlayerGrid.reduce((count, row, rowIndex) => {
+    return (
+      count +
+      row.reduce((rowCount, value, colIndex) => {
+        if (sudokuGivenMask[rowIndex]?.[colIndex]) {
+          return rowCount;
+        }
+
+        return value ? rowCount + 1 : rowCount;
+      }, 0)
+    );
+  }, 0);
+
+  const crypticInProgressPuzzleIds =
+    selectedGameMode === "Cryptic Puzzle" && currentPuzzle && !showAnswer ? [currentPuzzle.id] : [];
+  const sudokuInProgressPuzzleIds =
+    selectedGameMode === "Sudoku" && currentSudokuPuzzle && !showSudokuSolution && !sudokuSolved
+      ? [currentSudokuPuzzle.id]
+      : [];
 
   if (!hasRevealed) {
     const yesScale = 1 + noClicks * 0.18;
@@ -678,6 +805,18 @@ function App() {
           )}
         </section>
 
+        <ProgressDashboard
+          crypticEntries={crypticDashboardEntries}
+          sudokuEntries={sudokuDashboardEntries}
+          currentCrypticDraft={userAnswer}
+          currentSudokuElapsedSeconds={sudokuElapsedSeconds}
+          currentSudokuFilledCount={currentSudokuFilledCount}
+          crypticInProgressPuzzleIds={crypticInProgressPuzzleIds}
+          crypticCompletedPuzzleIds={crypticCompletedPuzzleIds}
+          sudokuInProgressPuzzleIds={sudokuInProgressPuzzleIds}
+          sudokuCompletedPuzzleIds={sudokuCompletedPuzzleIds}
+        />
+
         {selectedGameMode === "Cryptic Puzzle" && crypticErrorMessage && (
           <div className="w-full rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-800">
             {crypticErrorMessage}
@@ -721,6 +860,7 @@ function App() {
             inputMode={sudokuInputMode}
             incorrectCount={sudokuIncorrectCount}
             maxIncorrect={getMaxIncorrectForDifficulty(selectedSudokuDifficulty)}
+            elapsedSeconds={sudokuElapsedSeconds}
             selectedCell={selectedSudokuCell}
             selectedCellNotes={selectedNotes}
             flashingCells={flashingSudokuCells}
