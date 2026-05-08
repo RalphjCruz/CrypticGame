@@ -35,6 +35,7 @@ import {
 
 type AnswerStatus = "idle" | "empty" | "incorrect" | "correct";
 type GameMode = "Cryptic Puzzle" | "Sudoku";
+type AppPage = "Play" | "Dashboard";
 
 const gameModes: GameMode[] = ["Cryptic Puzzle", "Sudoku"];
 const MAX_DASHBOARD_HISTORY = 8;
@@ -48,6 +49,7 @@ function App() {
   const [noClicks, setNoClicks] = useState(0);
   const [noButtonPosition, setNoButtonPosition] = useState({ top: 70, left: 72 });
   const [noButtonStyleJitter, setNoButtonStyleJitter] = useState({ rotate: 0 });
+  const [currentPage, setCurrentPage] = useState<AppPage>("Play");
   const [selectedGameMode, setSelectedGameMode] = useState<GameMode>("Cryptic Puzzle");
 
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>("Very Easy");
@@ -699,88 +701,50 @@ function App() {
             hangyo's puzzles
           </h1>
         </header>
-
-        <section className="soft-card w-full rounded-3xl border border-sky-200/80 bg-white/80 p-5 backdrop-blur sm:p-6">
-          <p className="display-cute mb-3 text-center text-sm font-semibold text-sky-700 sm:text-base">
-            Choose Puzzle Type
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {gameModes.map((mode) => {
-              const isSelected = selectedGameMode === mode;
-
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setSelectedGameMode(mode)}
-                  className={`display-cute rounded-full border px-5 py-2 text-sm font-semibold transition-all duration-200 sm:text-base ${
-                    isSelected
-                      ? "border-sky-700 bg-gradient-to-r from-sky-500 to-cyan-500 text-white shadow-md shadow-sky-200"
-                      : "border-sky-200 bg-white text-sky-800 hover:-translate-y-0.5 hover:border-sky-300 hover:bg-sky-50"
-                  }`}
-                  aria-pressed={isSelected}
-                >
-                  {mode}
-                </button>
-              );
-            })}
+        <section className="soft-card w-full rounded-3xl border border-sky-200/80 bg-white/80 p-4 backdrop-blur sm:p-5">
+          <div className="flex flex-wrap justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage("Play")}
+              className={`display-cute rounded-full border px-5 py-2 text-sm font-semibold transition sm:text-base ${
+                currentPage === "Play"
+                  ? "border-sky-700 bg-sky-600 text-white"
+                  : "border-sky-200 bg-white text-sky-800 hover:bg-sky-50"
+              }`}
+              aria-pressed={currentPage === "Play"}
+            >
+              Play
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage("Dashboard")}
+              className={`display-cute rounded-full border px-5 py-2 text-sm font-semibold transition sm:text-base ${
+                currentPage === "Dashboard"
+                  ? "border-sky-700 bg-sky-600 text-white"
+                  : "border-sky-200 bg-white text-sky-800 hover:bg-sky-50"
+              }`}
+              aria-pressed={currentPage === "Dashboard"}
+            >
+              Dashboard
+            </button>
           </div>
+        </section>
 
-          {selectedGameMode === "Cryptic Puzzle" ? (
-            <>
-              <p className="display-cute mt-5 mb-3 text-center text-sm font-semibold text-sky-700 sm:text-base">
-                Choose Difficulty
-              </p>
-              <DifficultySelector
-                selectedDifficulty={selectedDifficulty}
-                onSelectDifficulty={handleDifficultyChange}
-              />
-
-              <label className="display-cute mt-4 block text-sm font-semibold text-sky-700">
-                Clue Type
-              </label>
-              <select
-                value={selectedType}
-                onChange={(event) => handleTypeChange(event.target.value as PuzzleType | "All Types")}
-                className="mt-2 w-full rounded-xl border border-sky-300 bg-white px-4 py-2 text-sm font-semibold text-sky-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-              >
-                {puzzleTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-
-              <button
-                type="button"
-                onClick={generatePuzzle}
-                className="display-cute mt-5 w-full rounded-2xl border border-sky-500 bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-500 px-5 py-3 text-base font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0 sm:text-lg"
-              >
-                Generate Puzzle
-              </button>
-            </>
-          ) : (
-            <>
-              <p className="display-cute mt-5 mb-3 text-center text-sm font-semibold text-sky-700 sm:text-base">
-                Choose Difficulty
+        {currentPage === "Play" ? (
+          <>
+            <section className="soft-card w-full rounded-3xl border border-sky-200/80 bg-white/80 p-5 backdrop-blur sm:p-6">
+              <p className="display-cute mb-3 text-center text-sm font-semibold text-sky-700 sm:text-base">
+                Choose Puzzle Type
               </p>
               <div className="flex flex-wrap items-center justify-center gap-3">
-                {sudokuDifficulties.map((difficulty) => {
-                  const isSelected = selectedSudokuDifficulty === difficulty;
+                {gameModes.map((mode) => {
+                  const isSelected = selectedGameMode === mode;
 
                   return (
                     <button
-                      key={difficulty}
+                      key={mode}
                       type="button"
-                      onClick={() => {
-                        setSelectedSudokuDifficulty(difficulty);
-                        setCurrentSudokuPuzzle(null);
-                        setSudokuPlayerGrid([]);
-                        setSudokuGivenMask([]);
-                        setSudokuEntryTypeGrid([]);
-                        setSelectedSudokuCell(null);
-                        resetSudokuRoundState();
-                      }}
+                      onClick={() => setSelectedGameMode(mode)}
                       className={`display-cute rounded-full border px-5 py-2 text-sm font-semibold transition-all duration-200 sm:text-base ${
                         isSelected
                           ? "border-sky-700 bg-gradient-to-r from-sky-500 to-cyan-500 text-white shadow-md shadow-sky-200"
@@ -788,98 +752,168 @@ function App() {
                       }`}
                       aria-pressed={isSelected}
                     >
-                      {difficulty}
+                      {mode}
                     </button>
                   );
                 })}
               </div>
 
-              <button
-                type="button"
-                onClick={generateSudoku}
-                className="display-cute mt-5 w-full rounded-2xl border border-sky-500 bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-500 px-5 py-3 text-base font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0 sm:text-lg"
-              >
-                Generate Sudoku
-              </button>
-            </>
-          )}
-        </section>
+              {selectedGameMode === "Cryptic Puzzle" ? (
+                <>
+                  <p className="display-cute mt-5 mb-3 text-center text-sm font-semibold text-sky-700 sm:text-base">
+                    Choose Difficulty
+                  </p>
+                  <DifficultySelector
+                    selectedDifficulty={selectedDifficulty}
+                    onSelectDifficulty={handleDifficultyChange}
+                  />
 
-        <ProgressDashboard
-          crypticEntries={crypticDashboardEntries}
-          sudokuEntries={sudokuDashboardEntries}
-          currentCrypticDraft={userAnswer}
-          currentSudokuElapsedSeconds={sudokuElapsedSeconds}
-          currentSudokuFilledCount={currentSudokuFilledCount}
-          crypticInProgressPuzzleIds={crypticInProgressPuzzleIds}
-          crypticCompletedPuzzleIds={crypticCompletedPuzzleIds}
-          sudokuInProgressPuzzleIds={sudokuInProgressPuzzleIds}
-          sudokuCompletedPuzzleIds={sudokuCompletedPuzzleIds}
-        />
+                  <label className="display-cute mt-4 block text-sm font-semibold text-sky-700">
+                    Clue Type
+                  </label>
+                  <select
+                    value={selectedType}
+                    onChange={(event) => handleTypeChange(event.target.value as PuzzleType | "All Types")}
+                    className="mt-2 w-full rounded-xl border border-sky-300 bg-white px-4 py-2 text-sm font-semibold text-sky-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                  >
+                    {puzzleTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
 
-        {selectedGameMode === "Cryptic Puzzle" && crypticErrorMessage && (
-          <div className="w-full rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-800">
-            {crypticErrorMessage}
-          </div>
-        )}
+                  <button
+                    type="button"
+                    onClick={generatePuzzle}
+                    className="display-cute mt-5 w-full rounded-2xl border border-sky-500 bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-500 px-5 py-3 text-base font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0 sm:text-lg"
+                  >
+                    Generate Puzzle
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="display-cute mt-5 mb-3 text-center text-sm font-semibold text-sky-700 sm:text-base">
+                    Choose Difficulty
+                  </p>
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    {sudokuDifficulties.map((difficulty) => {
+                      const isSelected = selectedSudokuDifficulty === difficulty;
 
-        {selectedGameMode === "Sudoku" && sudokuErrorMessage && (
-          <div className="w-full rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-800">
-            {sudokuErrorMessage}
-          </div>
-        )}
+                      return (
+                        <button
+                          key={difficulty}
+                          type="button"
+                          onClick={() => {
+                            setSelectedSudokuDifficulty(difficulty);
+                            setCurrentSudokuPuzzle(null);
+                            setSudokuPlayerGrid([]);
+                            setSudokuGivenMask([]);
+                            setSudokuEntryTypeGrid([]);
+                            setSelectedSudokuCell(null);
+                            resetSudokuRoundState();
+                          }}
+                          className={`display-cute rounded-full border px-5 py-2 text-sm font-semibold transition-all duration-200 sm:text-base ${
+                            isSelected
+                              ? "border-sky-700 bg-gradient-to-r from-sky-500 to-cyan-500 text-white shadow-md shadow-sky-200"
+                              : "border-sky-200 bg-white text-sky-800 hover:-translate-y-0.5 hover:border-sky-300 hover:bg-sky-50"
+                          }`}
+                          aria-pressed={isSelected}
+                        >
+                          {difficulty}
+                        </button>
+                      );
+                    })}
+                  </div>
 
-        {selectedGameMode === "Cryptic Puzzle" ? (
-          currentPuzzle ? (
-            <PuzzleCard
-              puzzle={currentPuzzle}
-              showHint={showHint}
-              showAnswer={showAnswer}
-              userAnswer={userAnswer}
-              answerStatus={answerStatus}
-              onAnswerChange={handleAnswerChange}
-              onCheckAnswer={checkAnswer}
-              onShowHint={() => setShowHint(true)}
-              onGenerateAnother={generatePuzzle}
-            />
-          ) : null
-        ) : currentSudokuPuzzle ? (
-          (() => {
-            const selectedNotes =
-              selectedSudokuCell &&
-              sudokuEntryTypeGrid[selectedSudokuCell.row]?.[selectedSudokuCell.col] === "temp"
-                ? sudokuPlayerGrid[selectedSudokuCell.row]?.[selectedSudokuCell.col] ?? ""
-                : "";
+                  <button
+                    type="button"
+                    onClick={generateSudoku}
+                    className="display-cute mt-5 w-full rounded-2xl border border-sky-500 bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-500 px-5 py-3 text-base font-semibold text-white shadow-lg shadow-sky-200 transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0 sm:text-lg"
+                  >
+                    Generate Sudoku
+                  </button>
+                </>
+              )}
+            </section>
 
-            return (
-          <SudokuCard
-            puzzle={currentSudokuPuzzle}
-            playerGrid={sudokuPlayerGrid}
-            givenMask={sudokuGivenMask}
-            entryTypeGrid={sudokuEntryTypeGrid}
-            inputMode={sudokuInputMode}
-            incorrectCount={sudokuIncorrectCount}
-            maxIncorrect={getMaxIncorrectForDifficulty(selectedSudokuDifficulty)}
-            elapsedSeconds={sudokuElapsedSeconds}
-            selectedCell={selectedSudokuCell}
-            selectedCellNotes={selectedNotes}
-            flashingCells={flashingSudokuCells}
-            showSolution={showSudokuSolution}
-            hintMessage={sudokuHintMessage}
-            onCellChange={handleSudokuCellChange}
-            onCellFocus={(row, col) => setSelectedSudokuCell({ row, col })}
-            onCellKeyDown={handleSudokuCellKeyDown}
-            onCellSelect={(row, col) => setSelectedSudokuCell({ row, col })}
-            onToggleSelectedCellNote={handleToggleSelectedCellNote}
-            onSubmitAnswers={handleSudokuSubmit}
-            onInputModeChange={setSudokuInputMode}
-            onUseHint={handleSudokuHint}
-            onRevealSolution={() => setShowSudokuSolution(true)}
-            onGenerateAnother={generateSudoku}
+            {selectedGameMode === "Cryptic Puzzle" && crypticErrorMessage && (
+              <div className="w-full rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-800">
+                {crypticErrorMessage}
+              </div>
+            )}
+
+            {selectedGameMode === "Sudoku" && sudokuErrorMessage && (
+              <div className="w-full rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-800">
+                {sudokuErrorMessage}
+              </div>
+            )}
+
+            {selectedGameMode === "Cryptic Puzzle" ? (
+              currentPuzzle ? (
+                <PuzzleCard
+                  puzzle={currentPuzzle}
+                  showHint={showHint}
+                  showAnswer={showAnswer}
+                  userAnswer={userAnswer}
+                  answerStatus={answerStatus}
+                  onAnswerChange={handleAnswerChange}
+                  onCheckAnswer={checkAnswer}
+                  onShowHint={() => setShowHint(true)}
+                  onGenerateAnother={generatePuzzle}
+                />
+              ) : null
+            ) : currentSudokuPuzzle ? (
+              (() => {
+                const selectedNotes =
+                  selectedSudokuCell &&
+                  sudokuEntryTypeGrid[selectedSudokuCell.row]?.[selectedSudokuCell.col] === "temp"
+                    ? sudokuPlayerGrid[selectedSudokuCell.row]?.[selectedSudokuCell.col] ?? ""
+                    : "";
+
+                return (
+                  <SudokuCard
+                    puzzle={currentSudokuPuzzle}
+                    playerGrid={sudokuPlayerGrid}
+                    givenMask={sudokuGivenMask}
+                    entryTypeGrid={sudokuEntryTypeGrid}
+                    inputMode={sudokuInputMode}
+                    incorrectCount={sudokuIncorrectCount}
+                    maxIncorrect={getMaxIncorrectForDifficulty(selectedSudokuDifficulty)}
+                    elapsedSeconds={sudokuElapsedSeconds}
+                    selectedCell={selectedSudokuCell}
+                    selectedCellNotes={selectedNotes}
+                    flashingCells={flashingSudokuCells}
+                    showSolution={showSudokuSolution}
+                    hintMessage={sudokuHintMessage}
+                    onCellChange={handleSudokuCellChange}
+                    onCellFocus={(row, col) => setSelectedSudokuCell({ row, col })}
+                    onCellKeyDown={handleSudokuCellKeyDown}
+                    onCellSelect={(row, col) => setSelectedSudokuCell({ row, col })}
+                    onToggleSelectedCellNote={handleToggleSelectedCellNote}
+                    onSubmitAnswers={handleSudokuSubmit}
+                    onInputModeChange={setSudokuInputMode}
+                    onUseHint={handleSudokuHint}
+                    onRevealSolution={() => setShowSudokuSolution(true)}
+                    onGenerateAnother={generateSudoku}
+                  />
+                );
+              })()
+            ) : null}
+          </>
+        ) : (
+          <ProgressDashboard
+            crypticEntries={crypticDashboardEntries}
+            sudokuEntries={sudokuDashboardEntries}
+            currentCrypticDraft={userAnswer}
+            currentSudokuElapsedSeconds={sudokuElapsedSeconds}
+            currentSudokuFilledCount={currentSudokuFilledCount}
+            crypticInProgressPuzzleIds={crypticInProgressPuzzleIds}
+            crypticCompletedPuzzleIds={crypticCompletedPuzzleIds}
+            sudokuInProgressPuzzleIds={sudokuInProgressPuzzleIds}
+            sudokuCompletedPuzzleIds={sudokuCompletedPuzzleIds}
           />
-            );
-          })()
-        ) : null}
+        )}
       </div>
     </main>
   );
