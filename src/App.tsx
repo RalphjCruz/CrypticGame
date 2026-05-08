@@ -15,6 +15,7 @@ import {
   isSudokuEntryCorrect,
   normalizeSudokuAnswerInput,
   normalizeSudokuPencilInput,
+  togglePencilDigit,
   type SudokuEntryTypeGrid,
   type SudokuInputMode,
   sudokuDifficulties,
@@ -176,6 +177,89 @@ function App() {
     setSudokuPlayerGrid((previousGrid) => updateSudokuGridValue(previousGrid, row, col, nextValue));
     setSudokuEntryTypeGrid((previousGrid) => updateSudokuEntryType(previousGrid, row, col, "answer"));
     setSelectedSudokuCell({ row, col });
+    if (sudokuHintMessage) {
+      setSudokuHintMessage(null);
+    }
+  };
+
+  const handleSudokuCellKeyDown = (row: number, col: number, key: string) => {
+    if (showSudokuSolution || !currentSudokuPuzzle || sudokuGivenMask[row]?.[col]) {
+      return;
+    }
+
+    if (key === "Enter") {
+      handleSudokuSubmit();
+      return;
+    }
+
+    const currentValue = sudokuPlayerGrid[row]?.[col] ?? "";
+    const currentEntryType = sudokuEntryTypeGrid[row]?.[col] ?? null;
+
+    if (key === "Backspace" || key === "Delete") {
+      if (!currentValue) {
+        return;
+      }
+
+      if (sudokuInputMode === "temp" && currentEntryType === "temp") {
+        const trimmed = currentValue.slice(0, -1);
+        setSudokuPlayerGrid((previousGrid) => updateSudokuGridValue(previousGrid, row, col, trimmed));
+        setSudokuEntryTypeGrid((previousGrid) =>
+          updateSudokuEntryType(previousGrid, row, col, trimmed ? "temp" : null)
+        );
+      } else {
+        setSudokuPlayerGrid((previousGrid) => updateSudokuGridValue(previousGrid, row, col, ""));
+        setSudokuEntryTypeGrid((previousGrid) => updateSudokuEntryType(previousGrid, row, col, null));
+      }
+      setSelectedSudokuCell({ row, col });
+      if (sudokuHintMessage) {
+        setSudokuHintMessage(null);
+      }
+      return;
+    }
+
+    if (!/^[1-9]$/.test(key)) {
+      return;
+    }
+
+    if (sudokuInputMode === "temp") {
+      const baseNotes = currentEntryType === "temp" ? currentValue : "";
+      const toggledNotes = togglePencilDigit(baseNotes, key);
+      setSudokuPlayerGrid((previousGrid) => updateSudokuGridValue(previousGrid, row, col, toggledNotes));
+      setSudokuEntryTypeGrid((previousGrid) =>
+        updateSudokuEntryType(previousGrid, row, col, toggledNotes ? "temp" : null)
+      );
+      setSelectedSudokuCell({ row, col });
+      if (sudokuHintMessage) {
+        setSudokuHintMessage(null);
+      }
+      return;
+    }
+
+    setSudokuPlayerGrid((previousGrid) => updateSudokuGridValue(previousGrid, row, col, key));
+    setSudokuEntryTypeGrid((previousGrid) => updateSudokuEntryType(previousGrid, row, col, "answer"));
+    setSelectedSudokuCell({ row, col });
+    if (sudokuHintMessage) {
+      setSudokuHintMessage(null);
+    }
+  };
+
+  const handleToggleSelectedCellNote = (digit: string) => {
+    if (!selectedSudokuCell || showSudokuSolution) {
+      return;
+    }
+
+    const { row, col } = selectedSudokuCell;
+    if (sudokuGivenMask[row]?.[col]) {
+      return;
+    }
+
+    const currentEntryType = sudokuEntryTypeGrid[row]?.[col] ?? null;
+    const currentValue = sudokuPlayerGrid[row]?.[col] ?? "";
+    const updatedNotes = togglePencilDigit(currentEntryType === "temp" ? currentValue : "", digit);
+    setSudokuPlayerGrid((previousGrid) => updateSudokuGridValue(previousGrid, row, col, updatedNotes));
+    setSudokuEntryTypeGrid((previousGrid) =>
+      updateSudokuEntryType(previousGrid, row, col, updatedNotes ? "temp" : null)
+    );
     if (sudokuHintMessage) {
       setSudokuHintMessage(null);
     }
@@ -583,6 +667,14 @@ function App() {
             />
           ) : null
         ) : currentSudokuPuzzle ? (
+          (() => {
+            const selectedNotes =
+              selectedSudokuCell &&
+              sudokuEntryTypeGrid[selectedSudokuCell.row]?.[selectedSudokuCell.col] === "temp"
+                ? sudokuPlayerGrid[selectedSudokuCell.row]?.[selectedSudokuCell.col] ?? ""
+                : "";
+
+            return (
           <SudokuCard
             puzzle={currentSudokuPuzzle}
             playerGrid={sudokuPlayerGrid}
@@ -592,17 +684,23 @@ function App() {
             incorrectCount={sudokuIncorrectCount}
             maxIncorrect={getMaxIncorrectForDifficulty(selectedSudokuDifficulty)}
             selectedCell={selectedSudokuCell}
+            selectedCellNotes={selectedNotes}
             flashingCells={flashingSudokuCells}
             showSolution={showSudokuSolution}
             hintMessage={sudokuHintMessage}
             onCellChange={handleSudokuCellChange}
             onCellFocus={(row, col) => setSelectedSudokuCell({ row, col })}
+            onCellKeyDown={handleSudokuCellKeyDown}
+            onCellSelect={(row, col) => setSelectedSudokuCell({ row, col })}
+            onToggleSelectedCellNote={handleToggleSelectedCellNote}
             onSubmitAnswers={handleSudokuSubmit}
             onInputModeChange={setSudokuInputMode}
             onUseHint={handleSudokuHint}
             onRevealSolution={() => setShowSudokuSolution(true)}
             onGenerateAnother={generateSudoku}
           />
+            );
+          })()
         ) : null}
       </div>
     </main>

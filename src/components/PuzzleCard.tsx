@@ -64,14 +64,19 @@ function PuzzleCard({
       </div>
 
       <div className="mt-6 flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={onShowHint}
-          disabled={showHint}
-          className="display-cute rounded-full border border-cyan-200 bg-cyan-100 px-4 py-2 text-sm font-semibold text-cyan-800 transition hover:-translate-y-0.5 hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {showHint ? "Hint Shown" : "Show Hint"}
-        </button>
+        {showHint ? (
+          <span className="display-cute inline-flex items-center rounded-full border border-cyan-200 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-800">
+            Hint Shown
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={onShowHint}
+            className="display-cute rounded-full border border-cyan-200 bg-cyan-100 px-4 py-2 text-sm font-semibold text-cyan-800 transition hover:-translate-y-0.5 hover:bg-cyan-200"
+          >
+            Show Hint
+          </button>
+        )}
         <button
           type="button"
           onClick={onGenerateAnother}

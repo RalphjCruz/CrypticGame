@@ -10,11 +10,15 @@ interface SudokuCardProps {
   incorrectCount: number;
   maxIncorrect: number;
   selectedCell: { row: number; col: number } | null;
+  selectedCellNotes: string;
   flashingCells: string[];
   showSolution: boolean;
   hintMessage: string | null;
   onCellChange: (row: number, col: number, value: string) => void;
   onCellFocus: (row: number, col: number) => void;
+  onCellKeyDown: (row: number, col: number, key: string) => void;
+  onCellSelect: (row: number, col: number) => void;
+  onToggleSelectedCellNote: (digit: string) => void;
   onSubmitAnswers: () => void;
   onInputModeChange: (mode: SudokuInputMode) => void;
   onUseHint: () => void;
@@ -38,11 +42,15 @@ function SudokuCard({
   incorrectCount,
   maxIncorrect,
   selectedCell,
+  selectedCellNotes,
   flashingCells,
   showSolution,
   hintMessage,
   onCellChange,
   onCellFocus,
+  onCellKeyDown,
+  onCellSelect,
+  onToggleSelectedCellNote,
   onSubmitAnswers,
   onInputModeChange,
   onUseHint,
@@ -50,6 +58,14 @@ function SudokuCard({
   onGenerateAnother,
 }: SudokuCardProps) {
   const renderGrid = showSolution ? puzzle.solution.map((row) => row.split("")) : playerGrid;
+  const selectedDigit = (() => {
+    if (!selectedCell) {
+      return null;
+    }
+
+    const value = renderGrid[selectedCell.row]?.[selectedCell.col] ?? "";
+    return /^[1-9]$/.test(value) ? value : null;
+  })();
 
   return (
     <article
@@ -122,10 +138,13 @@ function SudokuCard({
             row.map((value, colIndex) => (
               <div
                 key={`${rowIndex}-${colIndex}`}
+                onClick={() => onCellSelect(rowIndex, colIndex)}
                 className={`relative flex aspect-square items-center justify-center text-base font-bold sm:text-lg ${
                   !showSolution && selectedCell?.row === rowIndex && selectedCell?.col === colIndex
                     ? "bg-cyan-100/70 ring-2 ring-inset ring-cyan-500"
                     : ""
+                } ${
+                  selectedDigit && value === selectedDigit ? "bg-sky-100/80" : ""
                 } ${
                   flashingCells.includes(`${rowIndex}-${colIndex}`)
                     ? "bg-amber-100/80 ring-2 ring-inset ring-amber-400 animate-pulse"
@@ -143,21 +162,37 @@ function SudokuCard({
                       <span className="pointer-events-none text-cyan-700">{value}</span>
                     ) : null}
                     {entryTypeGrid[rowIndex][colIndex] === "temp" && value ? (
-                      <span className="pointer-events-none absolute right-1 bottom-1 text-[10px] leading-none font-semibold text-slate-900 sm:text-xs">
-                        {value.split("").join(" ")}
-                      </span>
+                      <div className="pointer-events-none absolute inset-[2px] grid grid-cols-3 grid-rows-3 text-[9px] leading-none font-semibold text-slate-900 sm:text-[10px]">
+                        {Array.from({ length: 9 }).map((_, digitIndex) => {
+                          const digit = String(digitIndex + 1);
+                          return (
+                            <span
+                              key={`${rowIndex}-${colIndex}-note-${digit}`}
+                              className="flex items-center justify-center"
+                            >
+                              {value.includes(digit) ? digit : ""}
+                            </span>
+                          );
+                        })}
+                      </div>
                     ) : null}
                     <input
                       type="text"
                       inputMode="numeric"
-                      maxLength={inputMode === "temp" ? 3 : 1}
+                      maxLength={inputMode === "temp" ? 9 : 1}
                       aria-label={`Row ${rowIndex + 1}, column ${colIndex + 1}`}
                       value={value}
                       onFocus={() => onCellFocus(rowIndex, colIndex)}
                       onKeyDown={(event) => {
-                        if (event.key === "Enter") {
+                        const isSupportedKey =
+                          /^[1-9]$/.test(event.key) ||
+                          event.key === "Backspace" ||
+                          event.key === "Delete" ||
+                          event.key === "Enter";
+
+                        if (isSupportedKey) {
                           event.preventDefault();
-                          onSubmitAnswers();
+                          onCellKeyDown(rowIndex, colIndex, event.key);
                         }
                       }}
                       onChange={(event) => onCellChange(rowIndex, colIndex, event.target.value)}
@@ -170,6 +205,46 @@ function SudokuCard({
           )}
         </div>
       </div>
+
+      {!showSolution &&
+      inputMode === "temp" &&
+      selectedCell &&
+      !givenMask[selectedCell.row]?.[selectedCell.col] ? (
+        <div className="mt-4 rounded-2xl border border-sky-200 bg-white/85 p-3">
+          <p className="display-cute text-xs font-semibold uppercase tracking-wide text-sky-700 sm:text-sm">
+            Cell {selectedCell.row + 1}, {selectedCell.col + 1} Notes
+          </p>
+          <div className="mt-2 grid grid-cols-3 gap-2 sm:max-w-44">
+            {Array.from({ length: 9 }).map((_, index) => {
+              const digit = String(index + 1);
+              const isActive = selectedCellNotes.includes(digit);
+              return (
+                <button
+                  key={`note-pad-${selectedCell.row}-${selectedCell.col}-${digit}`}
+                  type="button"
+                  onClick={() => onToggleSelectedCellNote(digit)}
+                  className={`display-cute rounded-lg border px-2 py-1 text-xs font-semibold transition sm:text-sm ${
+                    isActive
+                      ? "border-sky-600 bg-sky-600 text-white"
+                      : "border-slate-300 bg-slate-100 text-slate-800 hover:bg-slate-200"
+                  }`}
+                >
+                  {digit}
+                </button>
+              );
+            })}
+          </div>
+          {selectedCellNotes ? (
+            <p className="mt-2 text-xs font-medium text-sky-700 sm:text-sm">
+              Active notes: {selectedCellNotes.split("").join(", ")}
+            </p>
+          ) : (
+            <p className="mt-2 text-xs font-medium text-sky-700 sm:text-sm">
+              No notes yet. Tap digits above to add notes.
+            </p>
+          )}
+        </div>
+      ) : null}
 
       {hintMessage ? (
         <p className="mt-4 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-medium text-sky-800">

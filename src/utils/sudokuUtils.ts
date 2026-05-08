@@ -165,12 +165,26 @@ export const normalizeSudokuPencilInput = (value: string): string => {
     }
 
     uniqueDigits.push(digit);
-    if (uniqueDigits.length >= 3) {
+    if (uniqueDigits.length >= 9) {
       break;
     }
   }
 
   return uniqueDigits.join("");
+};
+
+export const togglePencilDigit = (existingValue: string, digit: string): string => {
+  const safeDigit = digit.replace(/[^1-9]/g, "");
+  if (!safeDigit) {
+    return normalizeSudokuPencilInput(existingValue);
+  }
+
+  const normalizedExisting = normalizeSudokuPencilInput(existingValue);
+  if (normalizedExisting.includes(safeDigit)) {
+    return normalizedExisting.replaceAll(safeDigit, "");
+  }
+
+  return normalizeSudokuPencilInput(`${normalizedExisting}${safeDigit}`);
 };
 
 export const updateSudokuGridValue = (
