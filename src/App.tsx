@@ -243,6 +243,44 @@ function App() {
     }
   };
 
+  useEffect(() => {
+    if (
+      selectedGameMode !== "Sudoku" ||
+      sudokuInputMode !== "temp" ||
+      !selectedSudokuCell ||
+      showSudokuSolution
+    ) {
+      return;
+    }
+
+    const handleGlobalKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const tagName = target?.tagName ?? "";
+      if (target?.isContentEditable || tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT") {
+        return;
+      }
+
+      const key = event.key;
+      const isSupportedKey =
+        /^[1-9]$/.test(key) || key === "Backspace" || key === "Delete" || key === "Enter";
+      if (!isSupportedKey) {
+        return;
+      }
+
+      event.preventDefault();
+      handleSudokuCellKeyDown(selectedSudokuCell.row, selectedSudokuCell.col, key);
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [
+    handleSudokuCellKeyDown,
+    selectedGameMode,
+    selectedSudokuCell,
+    showSudokuSolution,
+    sudokuInputMode,
+  ]);
+
   const handleToggleSelectedCellNote = (digit: string) => {
     if (!selectedSudokuCell || showSudokuSolution) {
       return;
