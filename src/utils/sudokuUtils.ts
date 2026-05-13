@@ -22,6 +22,7 @@ export const getSudokuPuzzlesByDifficulty = (
 interface RandomSudokuOptions {
   difficulty: SudokuDifficulty;
   previousPuzzleId?: number | null;
+  excludedPuzzleIds?: number[];
 }
 
 interface SudokuCell {
@@ -117,8 +118,12 @@ const applyHardVisibilityMask = (puzzle: SudokuPuzzle): SudokuPuzzle => {
 export const getRandomSudokuPuzzle = ({
   difficulty,
   previousPuzzleId,
+  excludedPuzzleIds = [],
 }: RandomSudokuOptions): SudokuPuzzle | null => {
-  const pool = getSudokuPuzzlesByDifficulty(difficulty);
+  const excludedSet = new Set(excludedPuzzleIds);
+  const pool = getSudokuPuzzlesByDifficulty(difficulty).filter(
+    (puzzle) => !excludedSet.has(puzzle.id)
+  );
 
   if (pool.length === 0) {
     return null;

@@ -49,14 +49,19 @@ interface RandomPuzzleOptions {
   difficulty: Difficulty;
   typeFilter: PuzzleType | "All Types";
   previousPuzzleId?: number | null;
+  excludedPuzzleIds?: number[];
 }
 
 export const getRandomPuzzle = ({
   difficulty,
   typeFilter,
   previousPuzzleId,
+  excludedPuzzleIds = [],
 }: RandomPuzzleOptions): Puzzle | null => {
-  const pool = getPuzzlesByDifficultyAndType(difficulty, typeFilter);
+  const excludedSet = new Set(excludedPuzzleIds);
+  const pool = getPuzzlesByDifficultyAndType(difficulty, typeFilter).filter(
+    (puzzle) => !excludedSet.has(puzzle.id)
+  );
 
   if (pool.length === 0) {
     return null;

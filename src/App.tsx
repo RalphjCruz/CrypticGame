@@ -6,7 +6,12 @@ import SudokuCard from "./components/SudokuCard";
 import type { CrypticDashboardEntry, SudokuDashboardEntry } from "./types/progress";
 import type { Difficulty, Puzzle, PuzzleType } from "./types/puzzle";
 import type { SudokuDifficulty, SudokuPuzzle } from "./types/sudoku";
-import { getRandomPuzzle, puzzleTypes, validatePuzzleBank } from "./utils/puzzleUtils";
+import {
+  getPuzzlesByDifficultyAndType,
+  getRandomPuzzle,
+  puzzleTypes,
+  validatePuzzleBank,
+} from "./utils/puzzleUtils";
 import {
   loadDashboardData,
   loadDraftData,
@@ -17,6 +22,7 @@ import {
   createSudokuEntryTypeGrid,
   createSudokuGivenMask,
   createSudokuPlayerGrid,
+  getSudokuPuzzlesByDifficulty,
   getMaxIncorrectForDifficulty,
   getRandomSudokuPuzzle,
   getSudokuHint,
@@ -81,7 +87,7 @@ function App() {
   const [sudokuErrorMessage, setSudokuErrorMessage] = useState<string | null>(null);
   const [sudokuDashboardEntries, setSudokuDashboardEntries] = useState<SudokuDashboardEntry[]>([]);
   const [sudokuCompletedPuzzleIds, setSudokuCompletedPuzzleIds] = useState<number[]>([]);
-  const [sudokuStartedAt, setSudokuStartedAt] = useState<number | null>(null);
+  const [sudokuTimerPausedByUser, setSudokuTimerPausedByUser] = useState(false);
   const [sudokuElapsedSeconds, setSudokuElapsedSeconds] = useState(0);
 
   const resetCrypticRoundState = () => {
@@ -101,6 +107,7 @@ function App() {
     setFlashingSudokuCells([]);
     setSudokuHintMessage(null);
     setSudokuErrorMessage(null);
+    setSudokuTimerPausedByUser(false);
     setSudokuElapsedSeconds(0);
   };
 
@@ -145,30 +152,45 @@ function App() {
     }
   }, []);
 
+  const shouldRunSudokuTimer =
+    currentPage === "Play" &&
+    selectedGameMode === "Sudoku" &&
+    !!currentSudokuPuzzle &&
+    !showSudokuSolution &&
+    !sudokuSolved &&
+    !sudokuTimerPausedByUser;
+
   useEffect(() => {
-    if (!sudokuStartedAt || showSudokuSolution || !currentSudokuPuzzle) {
+    if (!shouldRunSudokuTimer) {
       return;
     }
 
     const timerId = window.setInterval(() => {
-      setSudokuElapsedSeconds(Math.floor((Date.now() - sudokuStartedAt) / 1000));
+      setSudokuElapsedSeconds((previous) => previous + 1);
     }, 1000);
 
     return () => window.clearInterval(timerId);
-  }, [currentSudokuPuzzle, showSudokuSolution, sudokuStartedAt]);
+  }, [shouldRunSudokuTimer]);
 
   const generatePuzzle = () => {
+    const eligiblePuzzles = getPuzzlesByDifficultyAndType(selectedDifficulty, selectedType);
     const nextPuzzle = getRandomPuzzle({
       difficulty: selectedDifficulty,
       typeFilter: selectedType,
       previousPuzzleId: currentPuzzle?.id,
+      excludedPuzzleIds: crypticCompletedPuzzleIds,
     });
 
     if (!nextPuzzle) {
       setCurrentPuzzle(null);
       resetCrypticRoundState();
+      const completedCount = eligiblePuzzles.filter((puzzle) =>
+        crypticCompletedPuzzleIds.includes(puzzle.id)
+      ).length;
       setCrypticErrorMessage(
-        `No ${selectedDifficulty.toLowerCase()} puzzles found for ${selectedType}. Try another filter.`
+        eligiblePuzzles.length > 0 && completedCount === eligiblePuzzles.length
+          ? `You have completed all ${selectedDifficulty.toLowerCase()} puzzles for ${selectedType}. Try another filter.`
+          : `No ${selectedDifficulty.toLowerCase()} puzzles found for ${selectedType}. Try another filter.`
       );
       return;
     }
@@ -178,9 +200,11 @@ function App() {
   };
 
   const generateSudoku = () => {
+    const eligibleSudokus = getSudokuPuzzlesByDifficulty(selectedSudokuDifficulty);
     const nextSudoku = getRandomSudokuPuzzle({
       difficulty: selectedSudokuDifficulty,
       previousPuzzleId: currentSudokuPuzzle?.id,
+      excludedPuzzleIds: sudokuCompletedPuzzleIds,
     });
 
     if (!nextSudoku) {
@@ -189,10 +213,15 @@ function App() {
       setSudokuGivenMask([]);
       setSudokuEntryTypeGrid([]);
       setSelectedSudokuCell(null);
-      setSudokuStartedAt(null);
+      setSudokuTimerPausedByUser(false);
       resetSudokuRoundState();
+      const completedCount = eligibleSudokus.filter((puzzle) =>
+        sudokuCompletedPuzzleIds.includes(puzzle.id)
+      ).length;
       setSudokuErrorMessage(
-        `No ${selectedSudokuDifficulty.toLowerCase()} Sudoku puzzles found right now. Try another difficulty.`
+        eligibleSudokus.length > 0 && completedCount === eligibleSudokus.length
+          ? `You have completed all ${selectedSudokuDifficulty.toLowerCase()} Sudoku puzzles. Try another difficulty.`
+          : `No ${selectedSudokuDifficulty.toLowerCase()} Sudoku puzzles found right now. Try another difficulty.`
       );
       return;
     }
@@ -203,7 +232,7 @@ function App() {
     setSudokuEntryTypeGrid(createSudokuEntryTypeGrid(nextSudoku.puzzle));
     setSelectedSudokuCell(null);
     resetSudokuRoundState();
-    setSudokuStartedAt(Date.now());
+    setSudokuTimerPausedByUser(false);
   };
 
   const handleSudokuCellChange = (row: number, col: number, rawValue: string) => {
@@ -421,7 +450,7 @@ function App() {
       logSudokuSubmit(0, solved);
       if (solved) {
         setSudokuSolved(true);
-        setSudokuStartedAt(null);
+        setSudokuTimerPausedByUser(false);
         setSudokuCompletedPuzzleIds((previous) =>
           previous.includes(currentSudokuPuzzle.id)
             ? previous
@@ -456,7 +485,8 @@ function App() {
       setSudokuInputMode("answer");
       setSelectedSudokuCell(null);
       setSudokuSolved(false);
-      setSudokuStartedAt(Date.now());
+      setSudokuTimerPausedByUser(false);
+      setSudokuElapsedSeconds(0);
       setSudokuHintMessage("Incorrect number. 0 attempts remaining. Puzzle reset.");
       return;
     }
@@ -575,6 +605,13 @@ function App() {
       }
       return next;
     });
+  };
+
+  const handleToggleSudokuTimerPause = () => {
+    if (!currentSudokuPuzzle || showSudokuSolution || sudokuSolved) {
+      return;
+    }
+    setSudokuTimerPausedByUser((previous) => !previous);
   };
 
   const currentSudokuFilledCount = sudokuPlayerGrid.reduce((count, row, rowIndex) => {
@@ -881,6 +918,7 @@ function App() {
                     incorrectCount={sudokuIncorrectCount}
                     maxIncorrect={getMaxIncorrectForDifficulty(selectedSudokuDifficulty)}
                     elapsedSeconds={sudokuElapsedSeconds}
+                    timerPaused={!shouldRunSudokuTimer}
                     selectedCell={selectedSudokuCell}
                     selectedCellNotes={selectedNotes}
                     flashingCells={flashingSudokuCells}
@@ -891,6 +929,7 @@ function App() {
                     onCellKeyDown={handleSudokuCellKeyDown}
                     onCellSelect={(row, col) => setSelectedSudokuCell({ row, col })}
                     onToggleSelectedCellNote={handleToggleSelectedCellNote}
+                    onToggleTimerPause={handleToggleSudokuTimerPause}
                     onSubmitAnswers={handleSudokuSubmit}
                     onInputModeChange={setSudokuInputMode}
                     onUseHint={handleSudokuHint}

@@ -10,6 +10,7 @@ interface SudokuCardProps {
   incorrectCount: number;
   maxIncorrect: number;
   elapsedSeconds: number;
+  timerPaused: boolean;
   selectedCell: { row: number; col: number } | null;
   selectedCellNotes: string;
   flashingCells: string[];
@@ -20,6 +21,7 @@ interface SudokuCardProps {
   onCellKeyDown: (row: number, col: number, key: string) => void;
   onCellSelect: (row: number, col: number) => void;
   onToggleSelectedCellNote: (digit: string) => void;
+  onToggleTimerPause: () => void;
   onSubmitAnswers: () => void;
   onInputModeChange: (mode: SudokuInputMode) => void;
   onUseHint: () => void;
@@ -43,6 +45,7 @@ function SudokuCard({
   incorrectCount,
   maxIncorrect,
   elapsedSeconds,
+  timerPaused,
   selectedCell,
   selectedCellNotes,
   flashingCells,
@@ -53,6 +56,7 @@ function SudokuCard({
   onCellKeyDown,
   onCellSelect,
   onToggleSelectedCellNote,
+  onToggleTimerPause,
   onSubmitAnswers,
   onInputModeChange,
   onUseHint,
@@ -132,7 +136,8 @@ function SudokuCard({
               Incorrect: {incorrectCount} / {maxIncorrect}
             </span>
             <span className="display-cute w-full rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-center text-xs font-semibold text-sky-800 sm:w-auto sm:text-sm">
-              Time: {Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, "0")}
+              Time: {Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, "0")}{" "}
+              {timerPaused ? "(Paused)" : ""}
             </span>
           </div>
         ) : null}
@@ -259,6 +264,14 @@ function SudokuCard({
       ) : null}
 
       <div className="mt-6 flex flex-wrap gap-3">
+        <button
+          type="button"
+          onClick={onToggleTimerPause}
+          disabled={showSolution}
+          className="display-cute w-full rounded-full border border-violet-200 bg-violet-100 px-4 py-2 text-sm font-semibold text-violet-800 transition hover:-translate-y-0.5 hover:bg-violet-200 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+        >
+          {timerPaused ? "Resume Timer" : "Pause Timer"}
+        </button>
         <button
           type="button"
           onClick={onSubmitAnswers}
